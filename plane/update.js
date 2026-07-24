@@ -6,7 +6,7 @@ await utils.cloneOrPullRepo({
   branch: "preview",
 });
 
-await utils.copyDir("./repo/deploy/selfhost", "./code");
+await utils.copyDir("./repo/deployments/cli/community", "./code");
 await utils.renameFile("./code/variables.env", "./code/.env.example");
 
 await utils.removeContainerNames("./code/docker-compose.yml");

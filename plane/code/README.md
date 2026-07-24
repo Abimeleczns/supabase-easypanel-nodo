@@ -144,11 +144,11 @@ Again the `options [1-7]` will be popped up, and this time hit `7` to exit.
 Before proceeding, we suggest used to review `.env` file and set the values.
 Below are the most import keys you must refer to. _<span style="color: #fcba03">You can use any text editor to edit this file</span>_.
 
-> `NGINX_PORT` - This is default set to `80`. Make sure the port you choose to use is not preoccupied. (e.g `NGINX_PORT=8080`)
+> `LISTEN_HTTP_PORT` - This is default set to `80`. Make sure the port you choose to use is not preoccupied. (e.g `LISTEN_HTTP_PORT=8080`)
 
-> `WEB_URL` - This is default set to `http://localhost`. Change this to the FQDN you plan to use along with NGINX_PORT (eg. `https://plane.example.com:8080` or `http://[IP-ADDRESS]:8080`)
+> `WEB_URL` - This is default set to `http://localhost`. Change this to the FQDN you plan to use along with LISTEN_HTTP_PORT (eg. `https://plane.example.com:8080` or `http://[IP-ADDRESS]:8080`)
 
-> `CORS_ALLOWED_ORIGINS` - This is default set to `http://localhost`. Change this to the FQDN you plan to use along with NGINX_PORT (eg. `https://plane.example.com:8080` or `http://[IP-ADDRESS]:8080`)
+> `CORS_ALLOWED_ORIGINS` - This is default set to `http://localhost`. Change this to the FQDN you plan to use along with LISTEN_HTTP_PORT (eg. `https://plane.example.com:8080` or `http://[IP-ADDRESS]:8080`)
 
 There are many other settings you can play with, but we suggest you configure `EMAIL SETTINGS` as it will enable you to invite your teammates onto the platform.
 
@@ -156,7 +156,7 @@ There are many other settings you can play with, but we suggest you configure `E
 
 ### Continue with setup - Start Server (Docker Compose)
 
-Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `2` to start the sevices
+Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `2` to start the services
 
 ```bash
 Select a Action you want to perform:
@@ -191,7 +191,7 @@ In case you want to make changes to `plane.env` variables, we suggest you to sto
 
 #### Docker Compose 
 
-Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `3` to stop the sevices
+Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `3` to stop the services
 
 ```bash
 Select a Action you want to perform:
@@ -213,7 +213,7 @@ If all goes well, you must see something like this
 
 #### Docker Swarm
 
-Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `2` to stop the sevices
+Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `2` to stop the services
 
 ```bash
 Select an Action you want to perform:
@@ -236,7 +236,7 @@ If all goes well, you will see the confirmation from docker cli
 
 In case you want to make changes to `plane.env` variables, without stopping the server or you noticed some abnormalies in services, you can restart the services with `RESTART` / `REDEPLOY` option.
 
-Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `4` to restart the sevices
+Lets again run the `./setup.sh` command. You will again be prompted with the below options. This time select `4` to restart the services
 
 #### Docker Compose
 ```bash
@@ -486,7 +486,7 @@ When you want to restore the previously backed-up data, follow the instructions 
 1. Download the restore script using the command below. We suggest downloading it in the same folder as `setup.sh`.
 
    ```bash
-   curl -fsSL -o restore.sh https://raw.githubusercontent.com/makeplane/plane/master/deploy/selfhost/restore.sh
+   curl -fsSL -o restore.sh https://github.com/makeplane/plane/releases/latest/download/restore.sh
    chmod +x restore.sh
    ```
 
@@ -526,6 +526,31 @@ When you want to restore the previously backed-up data, follow the instructions 
    ```
 
 1. Start the Plane instance using `./setup.sh start`.
+
+---
+
+### Restore for Commercial Air-Gapped (Docker Compose)
+
+When you want to restore the previously backed-up data on Plane Commercial Air-Gapped version, follow the instructions below.
+
+1. Download the restore script using the command below
+
+   ```bash
+   curl -fsSL -o restore-airgapped.sh https://github.com/makeplane/plane/releases/latest/download/restore-airgapped.sh
+   chmod +x restore-airgapped.sh
+   ```
+
+1. Copy the backup folder and the `restore-airgapped.sh` to `Commercial Airgapped Edition` server
+
+1. Make sure that Plane Commercial (Airgapped) is extracted and ready to get started. In case it is running, you would need to stop that.
+
+1. Execute the command below to restore your data.
+
+   ```bash
+   ./restore-airgapped.sh <path to backup folder containing *.tar.gz files>
+   ```
+
+1. After restoration, you are ready to start Plane Commercial (Airgapped) will all your previously saved data. 
 
 ---
 

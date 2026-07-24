@@ -5,11 +5,11 @@ SCRIPT_DIR=$PWD
 SERVICE_FOLDER=plane-app
 PLANE_INSTALL_DIR=$PWD/$SERVICE_FOLDER
 export APP_RELEASE=stable
-export DOCKERHUB_USER=artifacts.plane.so/makeplane
+export DOCKERHUB_USER=makeplane
 export PULL_POLICY=${PULL_POLICY:-if_not_present}
 export GH_REPO=makeplane/plane
 export RELEASE_DOWNLOAD_URL="https://github.com/$GH_REPO/releases/download"
-export FALLBACK_DOWNLOAD_URL="https://raw.githubusercontent.com/$GH_REPO/$BRANCH/deploy/selfhost"
+export FALLBACK_DOWNLOAD_URL="https://raw.githubusercontent.com/$GH_REPO/$BRANCH/deployments/cli/community"
 
 CPU_ARCH=$(uname -m)
 OS_NAME=$(uname)
@@ -23,16 +23,16 @@ function print_header() {
 clear
 
 cat <<"EOF"
---------------------------------------------
- ____  _                          ///////// 
-|  _ \| | __ _ _ __   ___         ///////// 
-| |_) | |/ _` | '_ \ / _ \   /////    ///// 
-|  __/| | (_| | | | |  __/   /////    ///// 
-|_|   |_|\__,_|_| |_|\___|        ////      
-                                  ////      
---------------------------------------------
-Project management tool from the future
---------------------------------------------
+##+.    ##+    .##-                  
+ ######+.######-.######.              
+ #######.   -###    +#####+.          
+ #######.      +       +######.       
+ #######.              .#######       
+ #######.              .#######       
+  #######       +      .#######       
+    .+#####+    ###-   .#######       
+        .######.-#####+.+######       
+            -##.    -##    .+##
 EOF
 }
 
@@ -57,7 +57,7 @@ function spinner() {
 
 function checkLatestRelease(){
     echo "Checking for the latest release..." >&2
-    local latest_release=$(curl -s https://api.github.com/repos/$GH_REPO/releases/latest |  grep -o '"tag_name": "[^"]*"' | sed 's/"tag_name": "//;s/"//g')
+    local latest_release=$(curl -sSL https://api.github.com/repos/$GH_REPO/releases/latest |  grep -o '"tag_name": "[^"]*"' | sed 's/"tag_name": "//;s/"//g')
     if [ -z "$latest_release" ]; then
         echo "Failed to check for the latest release. Exiting..." >&2
         exit 1
@@ -141,6 +141,7 @@ function updateEnvFile() {
                 value=$(echo "$value" | sed 's/|/\\|/g')
                 sed -i '' "s|^$key=.*|$key=$value|g" "$file"
             else
+                value=$(echo "$value" | sed 's/\//\\\//g')
                 sed -i "s/^$key=.*/$key=$value/g" "$file"
             fi
         fi
@@ -196,7 +197,7 @@ function buildYourOwnImage(){
     REPO=https://github.com/$GH_REPO.git
     git clone "$REPO" "$PLANE_TEMP_CODE_DIR"  --branch "$BRANCH" --single-branch --depth 1
 
-    cp "$PLANE_TEMP_CODE_DIR/deploy/selfhost/build.yml" "$PLANE_TEMP_CODE_DIR/build.yml"
+    cp "$PLANE_TEMP_CODE_DIR/deployments/cli/community/build.yml" "$PLANE_TEMP_CODE_DIR/build.yml"
 
     cd "$PLANE_TEMP_CODE_DIR" || exit
 
@@ -247,7 +248,7 @@ function download() {
         mv $PLANE_INSTALL_DIR/docker-compose.yaml $PLANE_INSTALL_DIR/archive/$TS.docker-compose.yaml
     fi
 
-    RESPONSE=$(curl -H 'Cache-Control: no-cache, no-store' -s -w "HTTPSTATUS:%{http_code}" "$RELEASE_DOWNLOAD_URL/$APP_RELEASE/docker-compose.yml?$(date +%s)")
+    RESPONSE=$(curl -sSL -H 'Cache-Control: no-cache, no-store' -w "HTTPSTATUS:%{http_code}" "$RELEASE_DOWNLOAD_URL/$APP_RELEASE/docker-compose.yml?$(date +%s)")
     BODY=$(echo "$RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
     STATUS=$(echo "$RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
 
@@ -255,7 +256,7 @@ function download() {
         echo "$BODY" > $PLANE_INSTALL_DIR/docker-compose.yaml
     else
         # Fallback to download from the raw github url
-        RESPONSE=$(curl -H 'Cache-Control: no-cache, no-store' -s -w "HTTPSTATUS:%{http_code}" "$FALLBACK_DOWNLOAD_URL/docker-compose.yml?$(date +%s)")
+        RESPONSE=$(curl -sSL -H 'Cache-Control: no-cache, no-store' -w "HTTPSTATUS:%{http_code}" "$FALLBACK_DOWNLOAD_URL/docker-compose.yml?$(date +%s)")
         BODY=$(echo "$RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
         STATUS=$(echo "$RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
 
@@ -269,7 +270,7 @@ function download() {
         fi
     fi
 
-    RESPONSE=$(curl -H 'Cache-Control: no-cache, no-store' -s -w "HTTPSTATUS:%{http_code}" "$RELEASE_DOWNLOAD_URL/$APP_RELEASE/variables.env?$(date +%s)")
+    RESPONSE=$(curl -sSL -H 'Cache-Control: no-cache, no-store' -w "HTTPSTATUS:%{http_code}" "$RELEASE_DOWNLOAD_URL/$APP_RELEASE/variables.env?$(date +%s)")
     BODY=$(echo "$RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
     STATUS=$(echo "$RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
 
@@ -277,7 +278,7 @@ function download() {
         echo "$BODY" > $PLANE_INSTALL_DIR/variables-upgrade.env
     else
         # Fallback to download from the raw github url
-        RESPONSE=$(curl -H 'Cache-Control: no-cache, no-store' -s -w "HTTPSTATUS:%{http_code}" "$FALLBACK_DOWNLOAD_URL/variables.env?$(date +%s)")
+        RESPONSE=$(curl -sSL -H 'Cache-Control: no-cache, no-store' -w "HTTPSTATUS:%{http_code}" "$FALLBACK_DOWNLOAD_URL/variables.env?$(date +%s)")
         BODY=$(echo "$RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
         STATUS=$(echo "$RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
 
@@ -365,17 +366,49 @@ function startServices() {
     fi
 
     local api_container_id=$(docker container ls -q -f "name=$SERVICE_FOLDER-api")
+
+    # Verify container exists
+    if [ -z "$api_container_id" ]; then
+        echo "   Error: API container not found. Please check if services are running."
+        exit 1
+    fi
+
     local idx2=0
-    while ! docker exec $api_container_id python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" > /dev/null 2>&1;
-    do
-        local message=">> Waiting for API Service to Start"
-        local dots=$(printf '%*s' $idx2 | tr ' ' '.')    
+    local api_ready=true        # assume success, flip on timeout
+    local max_wait_time=300  # 5 minutes timeout
+    local start_time=$(date +%s)
+
+    echo "   Waiting for API Service to be ready..."
+    while ! docker exec "$api_container_id" python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=3)" > /dev/null 2>&1; do
+        local current_time=$(date +%s)
+        local elapsed_time=$((current_time - start_time))
+
+        if [ $elapsed_time -gt $max_wait_time ]; then
+            echo ""
+            echo "   API Service health check timed out after 5 minutes"
+            echo "   Checking if API container is still running..."
+            if docker ps | grep -q "$SERVICE_FOLDER-api"; then
+                echo "   API container is running but did not pass the health-check. Continuing without marking it ready."
+                api_ready=false
+                break
+            else
+                echo "   API container is not running. Please check logs."
+                exit 1
+            fi
+        fi
+
+        local message=">> Waiting for API Service to Start (${elapsed_time}s)"
+        local dots=$(printf '%*s' $idx2 | tr ' ' '.')
         echo -ne "\r$message$dots"
         ((idx2++))
         sleep 1
     done
     printf "\r\033[K"
-    echo "   API Service started successfully ✅"
+    if [ "$api_ready" = true ]; then
+        echo "   API Service started successfully ✅"
+    else
+        echo "   ⚠️  API Service did not respond to health-check – please verify manually."
+    fi
     source "${DOCKER_ENV_PATH}"
     echo "   Plane Server started successfully ✅"
     echo ""
@@ -657,7 +690,7 @@ if [ -f "$DOCKER_ENV_PATH" ]; then
     CUSTOM_BUILD=$(getEnvValue "CUSTOM_BUILD" "$DOCKER_ENV_PATH")
 
     if [ -z "$DOCKERHUB_USER" ]; then
-        DOCKERHUB_USER=artifacts.plane.so/makeplane
+        DOCKERHUB_USER=makeplane
         updateEnvFile "DOCKERHUB_USER" "$DOCKERHUB_USER" "$DOCKER_ENV_PATH"
     fi
 
