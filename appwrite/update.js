@@ -30,3 +30,15 @@ await fs.promises.unlink(tempModule);
 
 await utils.removeContainerNames("./code/docker-compose.yml");
 await utils.removePorts("./code/docker-compose.yml");
+
+await utils.searchReplace(
+  "./code/.env.example",
+  "_APP_DOMAIN=localhost",
+  "_APP_DOMAIN=$(PRIMARY_DOMAIN)"
+);
+
+await utils.searchReplace(
+  "./code/.env.example",
+  "_APP_DOMAIN_TARGET=localhost",
+  "_APP_DOMAIN_TARGET=$(PRIMARY_DOMAIN)"
+);
