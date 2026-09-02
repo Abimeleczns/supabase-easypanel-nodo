@@ -115,8 +115,8 @@ services:
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
 
-      GOTRUE_SITE_URL: ${SITE_URL}
-      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_SITE_URL: "https://campus.navsagency.com"
+      GOTRUE_URI_ALLOW_LIST: "https://campus.navsagency.com/**,https://navs-nodo-campus.yslawi.easypanel.host/**,http://localhost:3000/**,http://127.0.0.1:3000/**"
       GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP}
 
       GOTRUE_JWT_ADMIN_ROLES: service_role
